@@ -1,42 +1,32 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
-// ===================================
-// ===     MODUŁ MAGAZYNU (ERP)    ===
-// ===================================
-
 model ProductCategory {
   id       Int       @id @default(autoincrement())
   name     String    @unique
   products Product[]
 }
-
 model Product {
   id              Int      @id @default(autoincrement())
   name            String
   unit            String
   lowStockAlert   Float?
-
   manufacturer    String?
   materialType    String?
   color           String?
   diameter        Float?
-
   category        ProductCategory @relation(fields: [categoryId], references: [id])
   categoryId      Int
-
   purchases       Purchase[]
   orderItemUsages OrderItemUsage[]
-
+  requiredInQuotationItems RequiredProduct[]
+  shoppingListItems        ShoppingListItem[]
   @@unique([name])
 }
-
 model Purchase {
   id               Int      @id @default(autoincrement())
   purchaseDate     DateTime
@@ -48,17 +38,10 @@ model Purchase {
   exchangeRate     Float
   priceInPLN       Float
   costPerUnitInPLN Float
-
   product          Product  @relation(fields: [productId], references: [id])
   productId        Int
-
   orderItemUsages  OrderItemUsage[]
 }
-
-// ===================================
-// ===         MODUŁ CRM           ===
-// ===================================
-
 model Client {
   id         Int      @id @default(autoincrement())
   name       String   @unique
@@ -70,60 +53,40 @@ model Client {
   orders     Order[]
   quotations Quotation[]
 }
-
-// ===================================
-// === MODUŁ WYCEN (QUOTATIONS)    ===
-// ===================================
-
 model Quotation {
   id               Int      @id @default(autoincrement())
   quotationNumber  String   @unique
   quotationName    String
   createdAt        DateTime @default(now())
   status           String
-
   client           Client?  @relation(fields: [clientId], references: [id])
   clientId         Int?
-
   items            QuotationItem[]
   convertedToOrder Order?
 }
-
 model QuotationItem {
   id                  Int      @id @default(autoincrement())
   description         String
   quantity            Int      @default(1)
   markupPercent       Float    @default(0)
-
   calculatedCost      Float
   sellingPrice        Float
   requiresProcurement Boolean  @default(false)
-
   quotation           Quotation @relation(fields: [quotationId], references: [id])
   quotationId         Int
-
   requiredProducts    RequiredProduct[]
 }
-
 model RequiredProduct {
   id                Int      @id @default(autoincrement())
   quantity          Float
-
   product           Product? @relation(fields: [productId], references: [id])
   productId         Int?
-
   isCustom          Boolean  @default(false)
   customName        String?
   estimatedUnitCost Float?
-
   quotationItem     QuotationItem @relation(fields: [quotationItemId], references: [id])
   quotationItemId   Int
 }
-
-// ===================================
-// === MODUŁ ZAMÓWIEŃ (ORDERS)     ===
-// ===================================
-
 model Order {
   id            Int      @id @default(autoincrement())
   orderNumber   String   @unique
@@ -131,70 +94,44 @@ model Order {
   createdAt     DateTime @default(now())
   status        String
   acceptedPrice Float
-
   client        Client    @relation(fields: [clientId], references: [id])
   clientId      Int
-
   createdFrom   Quotation @relation(fields: [quotationId], references: [id])
   quotationId   Int       @unique
-
   usages        OrderItemUsage[]
   invoice       Invoice?
 }
-
 model OrderItemUsage {
   id             Int       @id @default(autoincrement())
   usedQuantity   Float
   calculatedCost Float
-
   order          Order     @relation(fields: [orderId], references: [id])
   orderId        Int
-
   purchase       Purchase  @relation(fields: [purchaseId], references: [id])
   purchaseId     Int
-
   product        Product   @relation(fields: [productId], references: [id])
   productId      Int
 }
-
-// ===================================
-// === MODUŁ ZAOPATRZENIA          ===
-// ===================================
-
 model ShoppingListItem {
   id        Int     @id @default(autoincrement())
   status    String
   reason    String
-
   product   Product @relation(fields: [productId], references: [id])
   productId Int
 }
-
-// ===================================
-// ===     MODUŁ FAKTUROWANIA      ===
-// ===================================
-
 model Invoice {
   id            Int      @id @default(autoincrement())
   invoiceNumber String   @unique
   issueDate     DateTime @default(now())
   dueDate       DateTime
-
   totalNet      Float
   totalVat      Float
   totalGross    Float
-
   paymentMethod String
   isPaid        Boolean  @default(false)
-
   order         Order    @relation(fields: [orderId], references: [id])
   orderId       Int      @unique
 }
-
-// ===================================
-// ===   MODUŁ USTAWIEŃ I NOTATEK  ===
-// ===================================
-
 model AppSettings {
   id                     Int    @id @default(1)
   companyName            String
@@ -203,7 +140,6 @@ model AppSettings {
   bankAccount            String
   invoiceNumberingFormat String
 }
-
 model Note {
   id        Int      @id @default(autoincrement())
   title     String
